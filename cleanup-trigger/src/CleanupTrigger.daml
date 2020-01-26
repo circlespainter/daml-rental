@@ -1,0 +1,50 @@
+-- Copyright (c) 2020 The DAML Authors. All rights reserved.
+-- SPDX-License-Identifier: Apache-2.0
+
+daml 1.2
+module CleanupTrigger where
+
+import Daml.Trigger
+
+import DA.Next.Map
+import DA.Foldable
+
+import Rental
+
+cleanupTrigger : Trigger ()
+cleanupTrigger = Trigger
+    {
+        initialize = const ()
+        , updateState = \_acs _message () -> ()
+        , rule = cleanupRule
+        , registeredTemplates = RegisteredTemplates [
+            registeredTemplate @RentalDelegateOffer
+            , registeredTemplate @VisitOffer
+            , registeredTemplate @VisitScheduleRequest
+            , registeredTemplate @Visited
+            , registeredTemplate @RentalApplication
+            , registeredTemplate @RentalContract
+        ]
+    }
+
+filterContractsIn : [Text] -> (a -> Text) -> [(b, a)] -> [b]
+filterContractsIn textColl extractor coll = map fst $ Prelude.filter (\(_, c) -> (extractor c) `Prelude.elem` textColl) coll
+
+cleanupRule : Party -> ACS -> Time -> Map CommandId [Command] -> () -> TriggerA ()
+cleanupRule party acs _time commandsInFlight () = do
+    let finalContractRegisterIds = map ((\ c -> c.registerId) . snd) (getContracts @RentalContract acs)
+
+    -- TODO Define extractor for all via typeclasses
+    let rentalDelegateOffers = filterContractsIn finalContractRegisterIds (\c -> c.registerId) $ getContracts @RentalDelegateOffer acs
+    let visitOffers = filterContractsIn finalContractRegisterIds (\c -> c.registerId) $ getContracts @VisitOffer acs
+    let visitScheduleRequest = filterContractsIn finalContractRegisterIds (\c -> c.registerId) $ getContracts @VisitScheduleRequest acs
+    let visited = filterContractsIn finalContractRegisterIds (\c -> c.registerId) $ getContracts @Visited acs
+    let rentalApplications = filterContractsIn finalContractRegisterIds (\c -> c.registerId) $ getContracts @RentalApplication acs
+
+    debug (rentalDelegateOffers, visitOffers, visitScheduleRequest, visited, rentalApplications)
+
+    forA_ rentalDelegateOffers $ \cid -> dedupExercise cid RentalDelegateOffer_Withdraw
+    forA_ visitOffers $ \cid -> dedupExercise cid VisitOffer_Withdraw
+    forA_ visitScheduleRequest $ \cid -> dedupExercise cid VisitScheduleRequest_Abort
+    forA_ visited $ \cid -> dedupExercise cid Rental_Interrupt
+    forA_ rentalApplications $ \cid -> dedupExercise cid RentalApplication_Reject

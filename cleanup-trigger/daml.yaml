@@ -1,0 +1,14 @@
+sdk-version: 0.13.42
+name: cleanup-trigger
+source: src
+parties:
+  - Alice
+  - Bob
+version: 0.0.1
+# trigger-dependencies-begin
+dependencies:
+  - daml-prim
+  - daml-stdlib
+  - daml-trigger
+  - ../ledger/.daml/dist/rental-0.0.1.dar
+# trigger-dependencies-end

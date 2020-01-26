@@ -1,0 +1,20 @@
+sdk-version: 0.0.0
+name: rental
+source: daml
+parties:
+  - Authority
+  - Landlord
+  - Tenant
+  - Agency
+  - Renter1
+  - Renter2
+version: 0.0.1
+dependencies:
+  - daml-prim
+  - daml-stdlib
+  - daml-trigger
+codegen:
+  scala:
+    package-prefix: com.digitalasset.example.rental.model
+    output-directory: scala-codegen/src/main/scala
+    verbosity: 2

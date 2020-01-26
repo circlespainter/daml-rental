@@ -1,0 +1,489 @@
+-- Copyright (c) 2020 The DAML Authors. All rights reserved.
+-- SPDX-License-Identifier: Apache-2.0
+
+daml 1.2
+module Rental where
+
+
+template AgencyLicense
+    with
+        -- Signatory
+        authority : Party
+        agency : Party
+
+    where
+        agreement
+            "A real estate agency license"
+
+        ensure
+            show authority == "'Authority'" -- Only the well known authority can create licenses
+
+        signatory
+            authority, agency
+
+        controller authority can
+
+            AgencyLicense_Offer : ContractId AgencyLicenseOffer
+                with
+                    newAgency : Party
+                do
+                    assert (authority /= newAgency) -- Prevent meaningless self-offer
+                    create AgencyLicenseOffer with
+                        -- Signatory
+                        authority,
+
+                        -- Controller
+                            agency = newAgency
+
+            AgencyLicense_Revoke : () do return () -- The authority always reserve the right to revoke licenses
+
+
+template AgencyLicenseOffer
+    with
+        -- Signatory
+        authority : Party
+
+        -- Controller
+        agency : Party
+
+    where
+        agreement
+            "A real estate agency license offer"
+
+        ensure
+            show authority == "'Authority'" -- Only the well known authority can offer licenses
+
+        signatory
+            authority
+
+        controller agency can
+
+            AgencyLicenseOffer_Accept : ContractId AgencyLicense
+                do
+                    create AgencyLicense with
+                        -- Signatory
+                        authority,
+                            agency
+
+            AgencyLicenseOffer_Refuse : () do return ()
+
+
+template Property
+    with
+        -- Signatory
+        authority : Party
+
+        -- Controller
+        landlord : Party
+
+        -- Data
+        tenant : Party
+        registerId : Text
+
+    where
+        agreement
+            "An officially property registration granted by the authority, it allows the landlord to rent it"
+
+        ensure
+            show authority == "'Authority'" && -- Only the well known authority can create properties
+                authority /= landlord && -- Avoid conflict of interest
+                authority /= tenant -- Avoid conflict of interest
+
+        signatory authority
+
+        controller landlord can
+
+            Property_Rent : ContractId Rental
+                do
+                    create Rental with
+                        -- Signatory
+                        landlord,
+                            agency = landlord,
+
+                        -- Data
+                            tenant,
+                            authority,
+                            registerId -- Key
+
+
+template Rental
+    with
+        -- Signatory
+        landlord : Party
+        agency : Party
+
+        -- Data
+        tenant : Party
+        authority : Party
+        registerId : Text -- Key
+
+    where
+        agreement
+            "A property put out for rent as agreed by the landlord and the rental agency"
+
+        signatory
+            landlord,
+            agency
+ 
+        key (agency, registerId) : (Party, Text)
+        maintainer key._1
+
+        controller agency can
+
+            -- An agency can offer to delegate the rental to a new agency
+            Rental_OfferDelegate : ContractId RentalDelegateOffer
+                with
+                    newAgency : Party
+                do
+                    create RentalDelegateOffer with
+                        -- Signatory
+                        landlord,
+                            agency,
+
+                        -- Controller
+                            newAgency,
+
+                        -- Data
+                            tenant,
+                            authority,
+                            registerId -- Carryover
+
+            -- An agency can offer a visit to many parties (that expressed interest off-ledger)
+            nonconsuming Rental_OfferVisit : ContractId VisitOffer
+                with
+                    visitor : Party
+                do
+                    create VisitOffer with
+                        -- Signatory
+                        agency,
+                            landlord,
+
+                        -- Controller
+                            visitor,
+
+                        -- Data
+                            tenant,
+                            registerId -- For accept
+
+
+template RentalDelegateOffer
+    with
+        -- Signatory
+        landlord : Party
+        agency : Party
+
+        -- Controller
+        newAgency  : Party
+
+        -- Data
+        tenant : Party
+        authority : Party
+        registerId : Text -- For Accept
+
+    where
+        agreement
+            "An offer by a landlord or agency to delegate the rental to an(other) licensed agency"
+
+        signatory
+            landlord
+
+        controller agency can
+
+            RentalDelegateOffer_Withdraw : ContractId Rental -- For cleanup trigger
+                do
+                    create Rental with
+                        -- Signatory
+                        landlord,
+                            agency,
+
+                        -- Data
+                            tenant,
+                            authority,
+                            registerId -- Key
+
+        controller newAgency can
+
+            RentalDelegateOffer_Accept : ContractId Rental
+                with
+                    licenseCid : ContractId AgencyLicense
+                do
+                    license <- fetch licenseCid
+
+                    assert (license.authority == authority) -- Probably unneeded as the authority is well known
+                    assert (license.agency == newAgency)
+
+                    create Rental with
+                        -- Signatory
+                        landlord,
+                            agency = newAgency,
+
+                        -- Data
+                            tenant,
+                            authority,
+                            registerId -- Key
+
+            RentalDelegateOffer_Refuse : () do return ()
+
+
+template VisitOffer
+    with
+        -- Signatory
+        agency : Party
+        landlord : Party
+
+        -- Controller
+        visitor : Party
+
+        -- Data
+        tenant : Party
+        registerId : Text -- Carryover
+
+    where
+        agreement
+            "A visit offer to a visitor (that got in touch externally after finding the rental on some board)"
+
+        signatory
+            agency,
+            landlord
+
+        controller agency can
+
+            VisitOffer_Withdraw : () do return () -- For cleanup trigger
+
+        controller visitor can
+
+            VisitOffer_Schedule : ContractId VisitScheduleRequest
+                do
+                    create VisitScheduleRequest with
+                        -- Signatory
+                        agency,
+                            visitor,
+                            landlord,
+
+                        -- Controller
+                            tenant,
+
+                        -- Data
+                            registerId -- Carryover
+
+            VisitOffer_Reject : () do return ()
+
+
+template VisitScheduleRequest
+    with
+        -- Signatory
+        agency : Party
+        visitor : Party
+        landlord : Party
+
+        -- Controller
+        tenant : Party
+
+        -- Data
+        registerId : Text -- Carryover
+
+    where
+        agreement
+            "A request by a visitor to schedule a visit with the tenant"
+
+        signatory
+            agency,
+            visitor,
+            landlord
+
+        controller agency can
+
+            VisitScheduleRequest_Abort : () do return () -- For cleanup trigger
+
+        controller tenant can
+
+            VisitScheduleRequest_Accept : ContractId Visited
+                do
+                    create Visited with
+                        -- Signatory
+                        agency,
+                            visitor,
+                            landlord,
+
+                        -- Data
+                            registerId -- Carryover
+
+            VisitScheduleRequest_Reject : () do return ()
+
+
+template Visited
+    with
+        -- Signatory
+        agency : Party
+        visitor : Party
+        landlord : Party
+
+        -- Data
+        registerId : Text -- Carryover
+
+    where
+        agreement
+            "A visit completed by a visitor"
+
+        signatory
+            agency,
+            visitor,
+            landlord
+
+        controller agency can
+
+            Rental_Interrupt : () do return () -- For cleanup trigger
+
+        controller visitor can
+
+            Rental_Apply : ContractId RentalApplication
+                do
+                    create RentalApplication with
+                        -- Signatory
+                        agency,
+                            applicant = visitor,
+                            landlord,
+
+                        -- Data
+                            registerId -- Carryover
+
+            Rental_Reject : () do return ()
+
+
+template RentalApplication
+    with
+        -- Signatory
+        agency : Party
+        applicant : Party
+        landlord : Party
+
+        -- Data
+        registerId : Text -- Carryover
+
+    where
+        agreement
+            "A rental application by an applicant after a visit"
+
+        signatory
+            agency,
+            applicant,
+            landlord
+
+        controller agency can
+
+            RentalApplication_Accept : ContractId RentalContractOffer
+                with
+                    authority : Party
+                do
+                    rentalPendingContractCid <- create RentalPendingContract with
+                        -- Signatory
+                        landlord,
+                            agency,
+
+                        -- Data
+                            registerId -- Display only
+
+                    rental <- fetchByKey @Rental (agency, registerId)
+                    archive rental._1
+
+                    create RentalContractOffer with
+                        -- Signatory
+                        agency,
+                            landlord,
+
+                        -- Controller
+                            applicant,
+
+                        -- Data
+                            rentalPendingContractCid,
+                            authority, -- For Reject
+                            registerId -- Carryover
+
+            RentalApplication_Reject : () do return ()
+
+
+template RentalPendingContract
+    with
+        -- Signatory
+        landlord : Party
+        agency : Party
+
+        -- Data
+        registerId : Text
+
+    where
+        agreement
+            "A rental that is locked by an agency because a rental contract acceptance is pending"
+
+        signatory
+            landlord,
+            agency
+
+
+template RentalContractOffer
+    with
+        -- Signatory
+        agency : Party
+        landlord : Party
+
+        -- Controller
+        applicant : Party
+
+        -- Data
+        rentalPendingContractCid : ContractId RentalPendingContract
+        authority : Party -- For Reject
+        registerId : Text -- For cleanup trigger
+
+    where
+        agreement
+            "A contract offer by an agency in response to an application"
+
+        signatory
+            agency,
+            landlord
+
+        controller applicant can
+
+            RentalContractOffer_Accept : ContractId RentalContract
+                do
+                    archive rentalPendingContractCid
+                    create RentalContract with
+                        landlord = landlord,
+                            agency = agency,
+                            tenant = applicant,
+                            registerId = registerId -- For cleanup trigger
+
+            RentalContractOffer_Reject : ()
+                do
+                    create Rental with
+                        -- Signatory
+                        landlord,
+                            agency,
+
+                        -- Data
+                            tenant = applicant,
+                            authority,
+                            registerId -- Key
+
+                    archive rentalPendingContractCid
+                    return ()
+
+
+template RentalContract
+    with
+        -- Signatory
+        landlord : Party
+        agency : Party
+        tenant : Party
+
+        -- Data
+        registerId : Text -- For cleanup trigger
+
+    where
+        agreement
+            "A property rental contract in effect"
+
+        signatory
+            landlord,
+            agency,
+            tenant

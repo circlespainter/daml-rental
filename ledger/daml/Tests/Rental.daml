@@ -1,0 +1,88 @@
+-- Copyright (c) 2020 The DAML Authors. All rights reserved.
+-- SPDX-License-Identifier: Apache-2.0
+
+daml 1.2
+module Tests.Rental where
+
+import Rental
+
+rental = scenario do
+
+    authority <- getParty "Authority" -- Don't change this ID, well-known authority
+    landlord <- getParty "Landlord"
+    tenant <- getParty "Tenant"
+    agency <- getParty "Agency"
+    renter <- getParty "Renter"
+
+    -- Only Authority can register and offer properties
+    submitMustFail landlord do
+        create Property with
+            authority,
+                landlord,
+                tenant,
+                registerId = "1"
+    submitMustFail landlord do
+        create Property with
+            authority = landlord,
+                landlord,
+                tenant,
+                registerId = "1"
+
+    propertyCid <- submit authority do
+        create Property with
+            authority,
+                landlord,
+                tenant,
+                registerId = "1"
+
+    -- Only Authority can create and offer agency licenses
+    submitMustFail agency do
+        create AgencyLicense with
+            authority,
+                agency = agency
+
+    submitMustFail agency do
+        create AgencyLicense with
+            authority = agency,
+                agency = agency
+
+    agencyLicenseOfferCid <- submit authority do
+        agencyLicenseCid <- create AgencyLicense with
+            authority,
+                agency = authority
+        exercise agencyLicenseCid AgencyLicense_Offer with
+            newAgency = agency
+
+    -- TODO Only Agency can accept a licence offered to it
+    agencyLicenseCid <- submit agency do
+        exercise agencyLicenseOfferCid AgencyLicenseOffer_Accept
+
+    -- Only Landlord can rent a property offered to it
+    rentalRentalDelegateOfferCid <- submit landlord do
+        rentalCid <- exercise propertyCid Property_Rent
+        exercise rentalCid Rental_OfferDelegate with
+            newAgency = agency
+
+    -- Only Agency can offer a visit
+    visitOfferCid <- submit agency do
+        rentalCid <- exercise rentalRentalDelegateOfferCid RentalDelegateOffer_Accept with
+            licenseCid = agencyLicenseCid
+        exercise rentalCid Rental_OfferVisit with
+            visitor = renter
+
+    visitScheduleRequestId <- submit renter do
+        exercise visitOfferCid VisitOffer_Schedule
+
+    visitId <- submit tenant do
+        exercise visitScheduleRequestId VisitScheduleRequest_Accept
+
+    rentalApplicationId <- submit renter do
+        exercise visitId Rental_Apply
+
+    rentalContractOfferId <- submit agency do
+        exercise rentalApplicationId RentalApplication_Accept
+            with
+                authority
+
+    submit renter do
+        exercise rentalContractOfferId RentalContractOffer_Accept

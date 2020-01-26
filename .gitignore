@@ -1,0 +1,6 @@
+.daml
+target
+.bloop
+.metals
+scala-codegen
+*.log
