@@ -15,8 +15,9 @@ export interface PropertyData {
 class DataService {
     // TODO typesafe
     loadContracts = async (template: Template) =>
-        await axios().post('/contracts/search', {"templateIds" : [`${template.moduleName}:${template.entityName}`]})
-            .then(res => res.data.result)
+        await axios().post('/contracts/search', {"%templates" : [
+            { "moduleName": `${template.moduleName}`, "entityName": `${template.entityName}` }
+        ]}).then(res => res.data.result)
 
     newProperty = async (prop: PropertyData) =>
         await axios().post('/command/create', {
