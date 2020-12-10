@@ -1,7 +1,5 @@
 # DAML Rental
 
-This project is a demo of a
-
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ### `yarn start`
