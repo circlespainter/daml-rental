@@ -21,13 +21,19 @@ class DataService {
 
     newProperty = async (prop: PropertyData) =>
         await axios().post('/command/create', {
-            templateId: 'Rental:Property',
+            templateId: {
+                moduleName: 'Rental',
+                entityName: 'Property'
+            },
             argument: prop
         }).then()
 
     rentProperty = async (contractId: string) =>
         await axios().post('/command/exercise', {
-            templateId: 'Rental:Property',
+            templateId: {
+                moduleName: 'Rental',
+                entityName: 'Property'
+            },
             choice: "Property_Rent",
             contractId: contractId,
             argument: {}
