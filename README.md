@@ -1,12 +1,12 @@
-# DAML Rental
+# Daml Rental
 
-A toy property rental process built on the [DAML Smart Contract Platform](https://daml.com/).
+A toy property rental process built on the [Daml Smart Contract Platform](https://daml.com/).
 
 It includes:
 
-- A [DAML model](https://docs.daml.com/daml/intro/0_Intro.html).
-- A [DAML trigger](https://docs.daml.com/triggers/index.html).
-- A partial [React](https://reactjs.org/) UI built with [`create-react-app --typescript`](https://reactjs.org/docs/create-a-new-react-app.html) and leveraging [React-Redux](https://redux.js.org/basics/usage-with-react), [Axios](https://github.com/axios/axios), [Material UI](https://material-ui.com) with `dark` palette type, [Material Table](https://material-table.com) and the [DAML JSON API](https://docs.daml.com/json-api/index.html). It is inspired by the Material UI Sign-in example, the Material UI Dashboard example (both available [here](https://material-ui.com/getting-started/templates/)) and most of the [theme configuration](ui/src/material-style/DashboardMaterialStyle.tsx) is actually taken verbatim from the latter (so due credits apply and the Material UI license may also apply to that code portion).
+- A [Daml model](https://docs.daml.com/daml/intro/0_Intro.html).
+- A [Daml trigger](https://docs.daml.com/triggers/index.html).
+- A partial [React](https://reactjs.org/) UI built with [`create-react-app --typescript`](https://reactjs.org/docs/create-a-new-react-app.html) and leveraging [React-Redux](https://redux.js.org/basics/usage-with-react), [Axios](https://github.com/axios/axios), [Material UI](https://material-ui.com) with `dark` palette type, [Material Table](https://material-table.com) and the [Daml JSON API](https://docs.daml.com/json-api/index.html). It is inspired by the Material UI Sign-in example, the Material UI Dashboard example (both available [here](https://material-ui.com/getting-started/templates/)) and most of the [theme configuration](ui/src/material-style/DashboardMaterialStyle.tsx) is actually taken verbatim from the latter (so due credits apply and the Material UI license may also apply to that code portion).
 
 Also, many of the React/TS patterns come from [React - The Complete Guide (incl Hooks, React Router, Redux)](https://www.udemy.com/course/react-the-complete-guide-incl-redux).
 
@@ -16,11 +16,11 @@ The JWT tokens in [`AuthService`](ui/src/svc/AuthService.tsx) have ben generated
 
 ## Limitations
 
-At present only two choices are implemented and the rest are left out as an exercise to the reader ;) : `Authority` registers a property and `Landlord` puts it to rent; the rest of the steps have to be carried out using the [DAML Navigator](https://docs.daml.com/tools/navigator/index.html) UI.
+At present only two choices are implemented and the rest are left out as an exercise to the reader ;) : `Authority` registers a property and `Landlord` puts it to rent; the rest of the steps have to be carried out using the [Daml Navigator](https://docs.daml.com/tools/navigator/index.html) UI.
 
 ## Getting started
 
-Running it requires the [DAML SDK](https://docs.daml.com/0.13.46/index.html) (0.13.46 or above) as well as [`yarn`](https://yarnpkg.com/) (and their respective prerequisites).
+Running it requires the [Daml SDK](https://docs.daml.com/0.13.46/index.html) (0.13.46 or above) as well as [`yarn`](https://yarnpkg.com/) (and their respective prerequisites).
 
 In the first terminal:
 
@@ -54,10 +54,17 @@ In the fourth terminal:
 ```bash
 cd ui
 
+yarn
+
 yarn start
 ```
 
-Access http://localhost:3000 and log in as `Authority` to start the process.
+Access http://localhost:3000 and log in as `Authority` to start the process. You can add a property in the "Properties" tab
+by pressing the `+` button next to the search. Use `Authority`, `Landlord` and `Tenant` as the parties and anything you like as the register ID.
+
+Now log out and log in again as `Landlord`: in the "Properties" tab you should see your property and you can rent it by pressing the "home" button to the left of it, in the "Actions" column. The property should now have disappeared from "Properties" and appeared in "Rentals".
+
+Currently, the React UI has full display support but it only allows two actions: an authority can create a property and a landlord can rent it; all other actions need to be carried out through the Daml navigator.
 
 ## Users and roles
 
@@ -67,7 +74,7 @@ Access http://localhost:3000 and log in as `Authority` to start the process.
 1. `Tenant`: is the current tenant of a property, agrees and runs property visits.
 1. `Renter1` and `Renter2`: two prospect renters that can be invited to visits by the agency.
 
-## The "happy path"
+## The full "happy path"
 
 1. The authority registers a property to a landlord (and to a tenant) and offers a license to a rental agency.
 1. The agency accepts the license.
@@ -87,7 +94,7 @@ Of course any stage can fail: the agency license can be withdrawn and any offer 
 
 ## TODOs
 
-Lots of, as further exercise left to the reader :)
+Besides the limitations noted above, lots of, as further exercises left to the reader :)
 
 ## LICENSE
 
