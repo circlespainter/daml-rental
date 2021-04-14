@@ -68,7 +68,7 @@ Currently, the React UI has full display support but it only allows two actions:
 
 ## Users and roles
 
-1. `Authority`: a well-known authority that registers properties as DAML contracts to their landlords and grants licenses to rental agencies.
+1. `Authority`: a well-known authority that registers properties as Daml contracts to their landlords and grants licenses to rental agencies.
 1. `Landlord`: owns a property and can delegate its rental to an agency.
 1. `Agency`: can accept to rent a property and governs the whole rental process on behalf of the landlord.
 1. `Tenant`: is the current tenant of a property, agrees and runs property visits.
