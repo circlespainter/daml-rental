@@ -37,7 +37,7 @@ const VisitScheduleRequestsTable: React.FC<Props> = props => {
         { title: 'Contract ID', field: 'contractId', editable: never },
         { title: 'Agency', field: 'payload.agency', editable: never },
         { title: 'Visitor', field: 'payload.visitor', editable: never },
-        { title: 'Ladlord', field: 'payload.landlord', editable: never },
+        { title: 'Landlord', field: 'payload.landlord', editable: never },
         { title: 'Tenant', field: 'payload.tenant', editable: never },
         { title: 'Register ID', field: 'payload.registerId', editable: never },
     ]
