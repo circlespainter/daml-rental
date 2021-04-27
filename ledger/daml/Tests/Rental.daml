@@ -10,8 +10,9 @@ rental = scenario do
 
     authority <- getParty "Authority" -- Don't change this ID, well-known authority
     landlord <- getParty "Landlord"
-    tenant <- getParty "Tenant"
     agency <- getParty "Agency"
+    provider <- getParty "Provider"
+    tenant <- getParty "Tenant"
     renter <- getParty "Renter"
 
     -- Only Authority can register and offer properties
