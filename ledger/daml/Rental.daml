@@ -4,7 +4,7 @@
 daml 1.2
 module Rental where
 
-
+-- AgencyLicence
 template AgencyLicense
     with
         -- Signatory
@@ -12,6 +12,7 @@ template AgencyLicense
         agency : Party
 
     where
+        -- Agreement
         agreement
             "A real estate agency license"
 
@@ -37,7 +38,7 @@ template AgencyLicense
 
             AgencyLicense_Revoke : () do return () -- The authority always reserve the right to revoke licenses
 
-
+-- AgencyLicenseOffer
 template AgencyLicenseOffer
     with
         -- Signatory
@@ -47,12 +48,14 @@ template AgencyLicenseOffer
         agency : Party
 
     where
+        -- Agreement
         agreement
             "A real estate agency license offer"
 
         ensure
             show authority == "'Authority'" -- Only the well known authority can offer licenses
 
+        -- Signatory
         signatory
             authority
 
@@ -67,7 +70,7 @@ template AgencyLicenseOffer
 
             AgencyLicenseOffer_Refuse : () do return ()
 
-
+-- Property
 template Property
     with
         -- Signatory
@@ -81,6 +84,7 @@ template Property
         registerId : Text
 
     where
+        -- Agreement
         agreement
             "An officially property registration granted by the authority, it allows the landlord to rent it"
 
@@ -93,6 +97,7 @@ template Property
 
         controller landlord can
 
+            -- Rent the property  
             Property_Rent : ContractId Rental
                 do
                     create Rental with
@@ -105,7 +110,7 @@ template Property
                             authority,
                             registerId -- Key
 
-
+-- Rental
 template Rental
     with
         -- Signatory
@@ -118,6 +123,7 @@ template Rental
         registerId : Text -- Key
 
     where
+        -- Agreement
         agreement
             "A property put out for rent as agreed by the landlord and the rental agency"
 
@@ -165,7 +171,7 @@ template Rental
                             tenant,
                             registerId -- For accept
 
-
+-- RentalDelegateOffer
 template RentalDelegateOffer
     with
         -- Signatory
@@ -181,6 +187,7 @@ template RentalDelegateOffer
         registerId : Text -- For Accept
 
     where
+        -- Agreement
         agreement
             "An offer by a landlord or agency to delegate the rental to an(other) licensed agency"
 
@@ -224,7 +231,7 @@ template RentalDelegateOffer
 
             RentalDelegateOffer_Refuse : () do return ()
 
-
+-- VisitOffer
 template VisitOffer
     with
         -- Signatory
@@ -239,6 +246,7 @@ template VisitOffer
         registerId : Text -- Carryover
 
     where
+        -- Agreement
         agreement
             "A visit offer to a visitor (that got in touch externally after finding the rental on some board)"
 
@@ -268,7 +276,7 @@ template VisitOffer
 
             VisitOffer_Reject : () do return ()
 
-
+-- VisitScheduleRequest
 template VisitScheduleRequest
     with
         -- Signatory
@@ -283,6 +291,7 @@ template VisitScheduleRequest
         registerId : Text -- Carryover
 
     where
+        -- Agreement
         agreement
             "A request by a visitor to schedule a visit with the tenant"
 
@@ -311,6 +320,7 @@ template VisitScheduleRequest
             VisitScheduleRequest_Reject : () do return ()
 
 
+-- Visited
 template Visited
     with
         -- Signatory
@@ -322,6 +332,7 @@ template Visited
         registerId : Text -- Carryover
 
     where
+        -- Agreement
         agreement
             "A visit completed by a visitor"
 
@@ -349,7 +360,7 @@ template Visited
 
             Rental_Reject : () do return ()
 
-
+-- RentalApplication
 template RentalApplication
     with
         -- Signatory
@@ -361,6 +372,7 @@ template RentalApplication
         registerId : Text -- Carryover
 
     where
+        -- Agreement
         agreement
             "A rental application by an applicant after a visit"
 
@@ -401,7 +413,7 @@ template RentalApplication
 
             RentalApplication_Reject : () do return ()
 
-
+-- RentalPendingContract
 template RentalPendingContract
     with
         -- Signatory
@@ -412,6 +424,7 @@ template RentalPendingContract
         registerId : Text
 
     where
+        -- Agreement
         agreement
             "A rental that is locked by an agency because a rental contract acceptance is pending"
 
@@ -420,6 +433,7 @@ template RentalPendingContract
             agency
 
 
+-- RentalContractOffer
 template RentalContractOffer
     with
         -- Signatory
@@ -435,6 +449,7 @@ template RentalContractOffer
         registerId : Text -- For cleanup trigger
 
     where
+        -- Agreement
         agreement
             "A contract offer by an agency in response to an application"
 
@@ -469,6 +484,7 @@ template RentalContractOffer
                     return ()
 
 
+-- RentalContract
 template RentalContract
     with
         -- Signatory
@@ -480,6 +496,7 @@ template RentalContract
         registerId : Text -- For cleanup trigger
 
     where
+        -- Agreement
         agreement
             "A property rental contract in effect"
 
@@ -487,3 +504,128 @@ template RentalContract
             landlord,
             agency,
             tenant
+
+-- MaintenanceRequest
+template MaintenanceRequest
+    with
+        -- Signatory
+        landlord : Party
+        agency : Party
+        provider: Party
+
+        -- Controller
+        agency : Party
+
+        -- Data
+        registerId : Text -- Carryover
+
+    where
+        -- Agreement
+        agreement
+            "A request for work"
+
+        signatory
+            agency,
+            landlord,
+            provider
+
+        controller agency can
+
+            MaintenanceRequest_Withdraw : () do return () -- For cleanup trigger
+
+        controller agency can
+
+            MaintenanceRequest_Accept : ContractId Approved
+                do
+                    create Approved with
+                        -- Signatory
+                            agency,
+                                landlord,
+                                provider,
+
+                            -- Controller
+                                agency,
+
+                            -- Data
+                                registerId -- Carryover
+
+        controller agency can
+
+            MaintenanceRequest_Refuse : ContractId Denied
+                do
+                    create Denied with
+                        -- Signatory
+                        agency,
+                            landlord,
+
+                        -- Controller
+                            agency,
+
+                        -- Data
+                            registerId -- Carryover
+
+        controller agency can
+
+            MaintenanceRequest_Schedule : ContractId Scheduled
+                do
+                    create Scheduled with
+                        -- Signatory
+                        agency,
+                            landlord,
+                            provider,
+
+                        -- Controller
+                            agency,
+
+                        -- Data
+                            registerId -- Carryover
+
+        controller agency can
+
+            MaintenanceRequest_Active : ContractId Active
+                do
+                    create Active with
+                        -- Signatory
+                        agency,
+                            landlord,
+                            provider,
+
+                        -- Controller
+                            agency
+
+                        -- Data
+                            registerId -- Carryover
+
+        controller agency can
+
+            MaintenanceRequest_Repaired : ContractId Complete -- repair done, not inspected
+                do
+                    create Complete with
+                        -- Signatory
+                        agency,
+                            landlord,
+                            provider,
+
+                        -- Controller
+                            agency
+
+                        -- Data
+                            registerId -- Carryover
+
+        controller agency can
+
+            MaintenanceRequest_Processed : ContractId Finalised -- repair done, inspected, authorised payment
+                do
+                    create Finalised with
+                        -- Signatory
+                        agency,
+                            landlord,
+                            provider,
+
+                        -- Controller
+                            agency
+
+                        -- Data
+                            registerId -- Carryover
+
+-- END OF FILE

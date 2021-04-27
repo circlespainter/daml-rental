@@ -4,8 +4,9 @@ source: daml
 parties:
   - Authority
   - Landlord
-  - Tenant
   - Agency
+  - Provider
+  - Tenant
   - Renter1
   - Renter2
 version: 0.0.1

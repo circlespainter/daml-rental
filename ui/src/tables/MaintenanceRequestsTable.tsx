@@ -11,7 +11,7 @@ import Spinner from '../widgets/Spinner'
 
 interface State {
     loading: boolean
-    rows?: any[] // TODO Typesafe
+    rows?: any[]
     error?: string
 }
 
@@ -25,7 +25,7 @@ type Props = OwnProps & StateProps & DispatchProps
 
 const never = 'never' as 'never'
 
-const AgencyLicenseOffersTable: React.FC<Props> = props => {
+const MaintenanceRequestsTable: React.FC<Props> = props => {
     const classes = useStyles()()
 
     const [state, setState] = useState<State>({
@@ -35,15 +35,19 @@ const AgencyLicenseOffersTable: React.FC<Props> = props => {
 
     const columns = [
         { title: 'Contract ID', field: 'contractId', editable: never },
-        { title: 'Authority', field: 'payload.authority', editable: never },
         { title: 'Agency', field: 'payload.agency', editable: never },
+        { title: 'Landlord', field: 'payload.landlord', editable: never },
+        { title: 'Provider', field: 'payload.provider', editable: never },
+        { title: 'Tenant', field: 'payload.tenant', editable: never },
+        { title: 'Visitor', field: 'payload.visitor', editable: never },
+        { title: 'Register ID', field: 'payload.registerId', editable: never },
     ]
 
     const loadData = useMemo(() => async () => {
         setState(prev => updateObject(prev, { loading: true }))
 
         try {
-            const res = await DataService.loadContracts({moduleName: 'v', entityName: 'AgencyLicenseOffer'})
+            const res = await DataService.loadContracts({moduleName: 'Rental', entityName: 'MaintenanceRequest'})
             setState(prev => updateObject(prev, { loading: false, rows: res }))
         } catch (err) {
             setState(prev => updateObject(prev, { loading: false, error: err, rows: [] }))
@@ -72,4 +76,4 @@ const AgencyLicenseOffersTable: React.FC<Props> = props => {
             </Grid>
 }
 
-export default connect<StateProps, DispatchProps, OwnProps, AppState>(null)(AgencyLicenseOffersTable)
+export default connect<StateProps, DispatchProps, OwnProps, AppState>(null)(MaintenanceRequestsTable)
